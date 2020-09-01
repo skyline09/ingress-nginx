@@ -29,7 +29,7 @@ const (
 )
 
 var (
-	// DefaultClass defines the default class used in the nginx ingres controller
+	// DefaultClass defines the default class used in the nginx ingress controller
 	DefaultClass = "nginx"
 
 	// IngressClass sets the runtime ingress class to use
@@ -63,5 +63,8 @@ func IsValid(ing *networking.Ingress) bool {
 	}
 
 	// 4. with IngressClass
-	return k8s.IngressClass.Name == *ing.Spec.IngressClassName
+	if ing.Spec.IngressClassName != nil {
+		return k8s.IngressClass.Name == *ing.Spec.IngressClassName
+	}
+	return false
 }

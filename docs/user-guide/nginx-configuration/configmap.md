@@ -19,7 +19,7 @@ data:
     This means that we want a value with boolean values we need to quote the values, like "true" or "false".
     Same for numbers, like "100".
 
-    "Slice" types (defined below as `[]string` or `[]int` can be provided as a comma-delimited string.
+    "Slice" types (defined below as `[]string` or `[]int`) can be provided as a comma-delimited string.
 
 ## Configuration options
 
@@ -115,11 +115,14 @@ The following table shows a configuration option's name, type, and the default v
 |[proxy-stream-responses](#proxy-stream-responses)|int|1|
 |[bind-address](#bind-address)|[]string|""|
 |[use-forwarded-headers](#use-forwarded-headers)|bool|"false"|
+|[enable-real-ip](#enable-real-ip)|bool|"false"|
 |[forwarded-for-header](#forwarded-for-header)|string|"X-Forwarded-For"|
 |[compute-full-forwarded-for](#compute-full-forwarded-for)|bool|"false"|
 |[proxy-add-original-uri-header](#proxy-add-original-uri-header)|bool|"false"|
 |[generate-request-id](#generate-request-id)|bool|"true"|
 |[enable-opentracing](#enable-opentracing)|bool|"false"|
+|[opentracing-operation-name](#opentracing-operation-name)|string|""|
+|[opentracing-location-operation-name](#opentracing-location-operation-name)|string|""|
 |[zipkin-collector-host](#zipkin-collector-host)|string|""|
 |[zipkin-collector-port](#zipkin-collector-port)|int|9411|
 |[zipkin-service-name](#zipkin-service-name)|string|"nginx"|
@@ -444,7 +447,7 @@ Sets the bucket size for the [map variables hash tables](http://nginx.org/en/doc
 
 ## proxy-real-ip-cidr
 
-If use-proxy-protocol is enabled, proxy-real-ip-cidr defines the default the IP/network address of your external load balancer.
+If use-forwarded-headers or use-proxy-protocol is enabled, proxy-real-ip-cidr defines the default the IP/network address of your external load balancer.
 
 ## proxy-set-headers
 
@@ -507,6 +510,8 @@ The default cipher list is:
 The ordering of a ciphersuite is very important because it decides which algorithms are going to be selected in priority. The recommendation above prioritizes algorithms that provide perfect [forward secrecy](https://wiki.mozilla.org/Security/Server_Side_TLS#Forward_Secrecy).
 
 Please check the [Mozilla SSL Configuration Generator](https://mozilla.github.io/server-side-tls/ssl-config-generator/).
+
+__Note:__ ssl_prefer_server_ciphers directive will be enabled by default for http context.
 
 ## ssl-ecdh-curve
 
@@ -743,6 +748,10 @@ If true, NGINX passes the incoming `X-Forwarded-*` headers to upstreams. Use thi
 
 If false, NGINX ignores incoming `X-Forwarded-*` headers, filling them with the request information it sees. Use this option if NGINX is exposed directly to the internet, or it's behind a L3/packet-based load balancer that doesn't alter the source IP in the packets.
 
+## enable-real-ip
+
+`enable-real-ip` enables the configuration of [http://nginx.org/en/docs/http/ngx_http_realip_module.html](http://nginx.org/en/docs/http/ngx_http_realip_module.html). Specific attributes of the module can be configured further by using `forwarded-for-header` and `proxy-real-ip-cidr` settings.
+
 ## forwarded-for-header
 
 Sets the header field for identifying the originating IP address of a client. _**default:**_ X-Forwarded-For
@@ -765,6 +774,18 @@ Enables the nginx Opentracing extension. _**default:**_ is disabled
 
 _References:_
 [https://github.com/opentracing-contrib/nginx-opentracing](https://github.com/opentracing-contrib/nginx-opentracing)
+
+## opentracing-operation-name
+
+Specifies a custom name for the server span. _**default:**_ is empty
+
+For example, set to "HTTP $request_method $uri".
+
+## opentracing-location-operation-name
+
+Specifies a custom name for the location span. _**default:**_ is empty
+
+For example, set to "HTTP $request_method $uri".
 
 ## zipkin-collector-host
 

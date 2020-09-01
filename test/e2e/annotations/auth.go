@@ -24,6 +24,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/onsi/ginkgo"
 	"github.com/stretchr/testify/assert"
@@ -320,15 +321,16 @@ var _ = framework.DescribeAnnotation("auth-*", func() {
 
 		f.NewHttpbinDeployment()
 
-		var httpbinIP string
-
 		err := framework.WaitForEndpoints(f.KubeClientSet, framework.DefaultTimeout, framework.HTTPBinService, f.Namespace, 1)
 		assert.Nil(ginkgo.GinkgoT(), err)
 
 		e, err := f.KubeClientSet.CoreV1().Endpoints(f.Namespace).Get(context.TODO(), framework.HTTPBinService, metav1.GetOptions{})
 		assert.Nil(ginkgo.GinkgoT(), err)
 
-		httpbinIP = e.Subsets[0].Addresses[0].IP
+		assert.GreaterOrEqual(ginkgo.GinkgoT(), len(e.Subsets), 1, "expected at least one endpoint")
+		assert.GreaterOrEqual(ginkgo.GinkgoT(), len(e.Subsets[0].Addresses), 1, "expected at least one address ready in the endpoint")
+
+		httpbinIP := e.Subsets[0].Addresses[0].IP
 
 		annotations := map[string]string{
 			"nginx.ingress.kubernetes.io/auth-url":    fmt.Sprintf("http://%s/cookies/set/alma/armud", httpbinIP),
@@ -360,15 +362,16 @@ var _ = framework.DescribeAnnotation("auth-*", func() {
 		ginkgo.BeforeEach(func() {
 			f.NewHttpbinDeployment()
 
-			var httpbinIP string
-
 			err := framework.WaitForEndpoints(f.KubeClientSet, framework.DefaultTimeout, framework.HTTPBinService, f.Namespace, 1)
 			assert.Nil(ginkgo.GinkgoT(), err)
 
 			e, err := f.KubeClientSet.CoreV1().Endpoints(f.Namespace).Get(context.TODO(), framework.HTTPBinService, metav1.GetOptions{})
 			assert.Nil(ginkgo.GinkgoT(), err)
 
-			httpbinIP = e.Subsets[0].Addresses[0].IP
+			assert.GreaterOrEqual(ginkgo.GinkgoT(), len(e.Subsets), 1, "expected at least one endpoint")
+			assert.GreaterOrEqual(ginkgo.GinkgoT(), len(e.Subsets[0].Addresses), 1, "expected at least one address ready in the endpoint")
+
+			httpbinIP := e.Subsets[0].Addresses[0].IP
 
 			annotations = map[string]string{
 				"nginx.ingress.kubernetes.io/auth-url":    fmt.Sprintf("http://%s/basic-auth/user/password", httpbinIP),
@@ -438,15 +441,18 @@ var _ = framework.DescribeAnnotation("auth-*", func() {
 		ginkgo.BeforeEach(func() {
 			f.NewHttpbinDeployment()
 
-			var httpbinIP string
-
 			err := framework.WaitForEndpoints(f.KubeClientSet, framework.DefaultTimeout, framework.HTTPBinService, f.Namespace, 1)
 			assert.Nil(ginkgo.GinkgoT(), err)
+
+			framework.Sleep(1 * time.Second)
 
 			e, err := f.KubeClientSet.CoreV1().Endpoints(f.Namespace).Get(context.TODO(), framework.HTTPBinService, metav1.GetOptions{})
 			assert.Nil(ginkgo.GinkgoT(), err)
 
-			httpbinIP = e.Subsets[0].Addresses[0].IP
+			assert.GreaterOrEqual(ginkgo.GinkgoT(), len(e.Subsets), 1, "expected at least one endpoint")
+			assert.GreaterOrEqual(ginkgo.GinkgoT(), len(e.Subsets[0].Addresses), 1, "expected at least one address ready in the endpoint")
+
+			httpbinIP := e.Subsets[0].Addresses[0].IP
 
 			annotations := map[string]string{
 				"nginx.ingress.kubernetes.io/auth-url":            fmt.Sprintf("http://%s/basic-auth/user/password", httpbinIP),
@@ -470,6 +476,8 @@ var _ = framework.DescribeAnnotation("auth-*", func() {
 					return strings.Contains(server, "location /bar")
 				})
 			}
+
+			framework.Sleep()
 		})
 
 		ginkgo.It("should return status code 200 when signed in after auth backend is deleted ", func() {
@@ -482,6 +490,7 @@ var _ = framework.DescribeAnnotation("auth-*", func() {
 
 			err := f.DeleteDeployment(framework.HTTPBinService)
 			assert.Nil(ginkgo.GinkgoT(), err)
+			framework.Sleep()
 
 			f.HTTPTestClient().
 				GET(fooPath).
@@ -501,6 +510,7 @@ var _ = framework.DescribeAnnotation("auth-*", func() {
 
 			err := f.DeleteDeployment(framework.HTTPBinService)
 			assert.Nil(ginkgo.GinkgoT(), err)
+			framework.Sleep()
 
 			f.HTTPTestClient().
 				GET(fooPath).
@@ -516,7 +526,6 @@ var _ = framework.DescribeAnnotation("auth-*", func() {
 				WithBasicAuth("user", "password").
 				Expect().
 				Status(http.StatusInternalServerError)
-
 		})
 
 		ginkgo.It("should deny login for different servers", func() {
@@ -530,6 +539,7 @@ var _ = framework.DescribeAnnotation("auth-*", func() {
 
 			err := f.DeleteDeployment(framework.HTTPBinService)
 			assert.Nil(ginkgo.GinkgoT(), err)
+			framework.Sleep()
 
 			ginkgo.By("receiving an internal server error without cache on thisHost location /bar")
 			f.HTTPTestClient().
